@@ -1,7 +1,7 @@
 {
   "name": "ever-evolving-game",
   "version": "1.0.0",
-  "description": "A dynamic, infinite game with Supabase + OpenAI + Pixi.js",
+  "description": "A dynamic, infinite game",
   "dependencies": {
     "node-fetch": "^2.6.7",
     "@supabase/supabase-js": "^2.11.0"
