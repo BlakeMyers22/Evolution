@@ -10,7 +10,7 @@ let playerSprite;
 let currentRoom = null;
 let playerRoomX = 0;
 let playerRoomY = 0;
-let playerTileX = 1; // inside the room
+let playerTileX = 1; 
 let playerTileY = 1;
 
 window.addEventListener("DOMContentLoaded", async () => {
@@ -23,11 +23,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("down-btn").addEventListener("click", () => attemptMove(0, 1));
   document.getElementById("left-btn").addEventListener("click", () => attemptMove(-1, 0));
   document.getElementById("right-btn").addEventListener("click", () => attemptMove(1, 0));
+
   document.getElementById("pick-up-btn").addEventListener("click", pickUpItems);
 
   // Puzzle input
-  const puzzleSubmitBtn = document.getElementById("puzzle-submit-btn");
-  puzzleSubmitBtn.addEventListener("click", solvePuzzle);
+  document.getElementById("puzzle-submit-btn").addEventListener("click", solvePuzzle);
 
   // Keyboard controls
   window.addEventListener("keydown", handleKeyDown);
@@ -61,7 +61,6 @@ function initPixi() {
   g.beginFill(0xffd700);
   g.drawRect(0, 0, TILE_SIZE, TILE_SIZE);
   g.endFill();
-
   playerSprite = new PIXI.Sprite(app.renderer.generateTexture(g));
   app.stage.addChild(playerSprite);
 }
@@ -97,13 +96,12 @@ function handleKeyDown(e) {
   }
 }
 
-// Try to move player in local tile coords, checking collisions
 async function attemptMove(dx, dy) {
   if (!currentRoom) return;
   const newX = playerTileX + dx;
   const newY = playerTileY + dy;
 
-  // Out of room bounds -> move to new room
+  // Out of room bounds -> move to adjacent room
   if (newX < 0) {
     playerRoomX -= 1;
     playerTileX = ROOM_WIDTH - 1;
@@ -130,7 +128,7 @@ async function attemptMove(dx, dy) {
     return;
   }
 
-  // Check collision with wall
+  // Check collision
   if (currentRoom.tilemap[newY][newX] === "wall") {
     logMessage("You bump into a wall!");
     return;
@@ -143,24 +141,16 @@ async function attemptMove(dx, dy) {
   renderRoom();
 }
 
-// Load or create the player's state from Supabase
 async function loadOrCreatePlayerState() {
   const userId = getOrCreateUserId();
-
-  // We can store some minimal data in localStorage, but let's rely on the server
-  // For simplicity, let's assume the player starts at (0,0) with tile coords (1,1)
-  // if there's no existing data.
-
-  // We'll do a quick fetch from player_states
   const res = await fetch("/api/createOrFetchRoom", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      getPlayer: true, // We'll handle that in the same function or create a new route
+      getPlayer: true,
       userId
     })
   });
-
   const data = await res.json();
   if (data.error) {
     logMessage("Error loading player state: " + data.error);
@@ -174,7 +164,6 @@ async function loadOrCreatePlayerState() {
   }
 }
 
-// Actually fetch or create the room data from Supabase for the current coords
 async function loadCurrentRoom() {
   try {
     const response = await fetch("/api/createOrFetchRoom", {
@@ -189,7 +178,6 @@ async function loadCurrentRoom() {
     }
     currentRoom = data.room;
     logMessage(`Loaded room at (${playerRoomX}, ${playerRoomY})`);
-
     renderRoom();
   } catch (err) {
     console.error(err);
@@ -201,15 +189,13 @@ function renderRoom() {
   if (!currentRoom) return;
   const { tilemap } = currentRoom;
 
-  // Render tilemap
   for (let y = 0; y < ROOM_HEIGHT; y++) {
     for (let x = 0; x < ROOM_WIDTH; x++) {
       const cell = tilemap[y][x];
       const sprite = tileSprites[y][x];
       let color = 0x00ff00; // floor
-      if (cell === "wall") color = 0x555555; // gray wall
+      if (cell === "wall") color = 0x555555; // wall
 
-      // Create a simple texture
       const g = new PIXI.Graphics();
       g.beginFill(color);
       g.drawRect(0, 0, TILE_SIZE, TILE_SIZE);
@@ -222,20 +208,21 @@ function renderRoom() {
   playerSprite.x = playerTileX * TILE_SIZE;
   playerSprite.y = playerTileY * TILE_SIZE;
 
-  // If there's an unsolved puzzle, mention it
+  // If there's an unsolved puzzle
   if (currentRoom.puzzle && !currentRoom.puzzle.solved) {
     logMessage(`Puzzle found: ${currentRoom.puzzle.question}`);
   } else if (currentRoom.puzzle && currentRoom.puzzle.solved) {
     logMessage("Puzzle here has been solved already.");
   }
 
-  // If there are items in the room
+  // If there are items
   if (currentRoom.items && currentRoom.items.length > 0) {
-    logMessage(`Items on the floor: ${currentRoom.items.map(i => i.name).join(", ")}`);
+    logMessage(
+      `Items on the floor: ${currentRoom.items.map(i => i.name).join(", ")}`
+    );
   }
 }
 
-// Update the player's position in Supabase
 async function updatePlayerServer() {
   const userId = getOrCreateUserId();
   await fetch("/api/createOrFetchRoom", {
@@ -252,7 +239,6 @@ async function updatePlayerServer() {
   });
 }
 
-// Attempt to solve a puzzle
 async function solvePuzzle() {
   if (!currentRoom || !currentRoom.puzzle || currentRoom.puzzle.solved) {
     logMessage("No unsolved puzzle here.");
@@ -277,12 +263,11 @@ async function solvePuzzle() {
   const data = await res.json();
   logMessage(data.message || JSON.stringify(data));
   if (data.success) {
-    // Refresh the room data so the puzzle is marked solved
+    // Refresh to mark puzzle solved
     await loadCurrentRoom();
   }
 }
 
-// Pick up items
 async function pickUpItems() {
   if (!currentRoom || !currentRoom.items || currentRoom.items.length === 0) {
     logMessage("No items to pick up here.");
@@ -302,7 +287,6 @@ async function pickUpItems() {
   const data = await res.json();
   logMessage(data.message || JSON.stringify(data));
   if (data.success) {
-    // Reload room so items are cleared
     await loadCurrentRoom();
   }
 }
