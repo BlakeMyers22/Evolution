@@ -2,7 +2,6 @@
 const { createClient } = require("@supabase/supabase-js");
 const fetch = require("node-fetch");
 
-// For Node < 18, define global fetch
 if (!global.fetch) {
   global.fetch = fetch;
 }
