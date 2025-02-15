@@ -1,1 +1,9 @@
+{
+  "name": "ever-evolving-text-game",
+  "version": "1.0.0",
+  "description": "A text-based, ever-evolving AI game",
+  "dependencies": {
+    "node-fetch": "^2.6.7"
+  }
+}
 
