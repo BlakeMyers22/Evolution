@@ -20,7 +20,7 @@ h1 {
 
 #game-container {
   width: 100%;
-  height: 480px; /* Enough to display 10 tiles at 48px each, for example */
+  height: 480px; /* Enough to show 10 tiles at 48px each */
   background: #222;
   margin-bottom: 10px;
   position: relative;
