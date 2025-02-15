@@ -1,5 +1,6 @@
 // functions/createOrFetchRoom.js
 const { getSupabase } = require("./supabaseClient");
+const fetch = require("node-fetch");
 
 exports.handler = async (event) => {
   try {
@@ -9,22 +10,16 @@ exports.handler = async (event) => {
     }
 
     const body = JSON.parse(event.body || "{}");
-
-    // If this is a request to fetch or update player state
-    if (body.getPlayer) {
-      return await handleGetPlayerState(supabase, body.userId);
-    }
-    if (body.updatePlayer) {
-      return await handleUpdatePlayerState(supabase, body.userId, body.x, body.y);
+    if (!body.x || !body.y) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ error: "Missing x or y" })
+      };
     }
 
-    // Otherwise, we create or fetch a room at (x, y)
     const { x, y } = body;
-    if (typeof x !== "number" || typeof y !== "number") {
-      return { statusCode: 400, body: JSON.stringify({ error: "Invalid coordinates" }) };
-    }
 
-    // Check if a room already exists at (x, y)
+    // 1) Check if room exists
     const { data, error } = await supabase
       .from("rooms")
       .select("*")
@@ -33,21 +28,38 @@ exports.handler = async (event) => {
       .single();
 
     if (error && error.code !== "PGRST116") {
-      // Some unexpected error
+      // Unexpected error
       return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
     }
 
     let room = data;
-    // If room doesn't exist, create one
     if (!room) {
-      // For demonstration, name = "Room (x,y)", desc = "A newly formed room."
+      // Create a random tilemap
+      const tilemap = generateTilemap(10, 10);
+
+      // 20% chance to generate a puzzle
+      let puzzle = null;
+      if (Math.random() < 0.2) {
+        puzzle = await generatePuzzle();
+      }
+
+      // 20% chance to place an item in this room
+      const items = [];
+      if (Math.random() < 0.2) {
+        items.push({
+          name: "Mysterious Artifact",
+          description: "A strange glowing orb."
+        });
+      }
+
       const insert = await supabase
         .from("rooms")
         .insert({
-          name: `Room (${x}, ${y})`,
-          description: `A newly formed mysterious space at (${x}, ${y}).`,
           x,
-          y
+          y,
+          tilemap,
+          items,
+          puzzle
         })
         .single();
 
@@ -70,62 +82,66 @@ exports.handler = async (event) => {
   }
 };
 
-async function handleGetPlayerState(supabase, userId) {
-  if (!userId) {
-    return { statusCode: 400, body: JSON.stringify({ error: "No userId" }) };
-  }
-  // Attempt to fetch player state
-  const { data, error } = await supabase
-    .from("player_states")
-    .select("*")
-    .eq("user_id", userId)
-    .single();
-
-  if (error && error.code !== "PGRST116") {
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
-  }
-
-  if (!data) {
-    // Create a default state
-    const insert = await supabase
-      .from("player_states")
-      .insert({
-        user_id: userId,
-        x: 0,
-        y: 0,
-        inventory: {}
-      })
-      .single();
-    if (insert.error) {
-      return { statusCode: 500, body: JSON.stringify({ error: insert.error.message }) };
+// Generate a random 2D tilemap (floor/wall)
+function generateTilemap(width, height) {
+  const map = [];
+  for (let y = 0; y < height; y++) {
+    const row = [];
+    for (let x = 0; x < width; x++) {
+      // Outer edges as walls, plus random walls
+      const isEdge = (x === 0 || y === 0 || x === width - 1 || y === height - 1);
+      const randomWall = Math.random() < 0.1;
+      row.push(isEdge || randomWall ? "wall" : "floor");
     }
+    map.push(row);
+  }
+  return map;
+}
+
+// Use OpenAI to generate a random puzzle
+async function generatePuzzle() {
+  try {
+    if (!process.env.OPENAI_API_KEY) return null;
+
+    const prompt = "Generate a short riddle puzzle with a single-word answer.";
+    const openAIResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You create fun, short riddle puzzles." },
+          { role: "user", content: prompt }
+        ],
+        max_tokens: 100,
+        temperature: 0.9
+      })
+    });
+
+    if (!openAIResponse.ok) return null;
+
+    const responseData = await openAIResponse.json();
+    const text = responseData.choices[0].message.content.trim();
+
+    // We'll assume the puzzle is in the format "Riddle: ??? Answer: ???"
+    // But let's parse it in a naive way
+    let riddle = text;
+    let answer = "unknown";
+
+    const match = /answer:\s*(\w+)/i.exec(text);
+    if (match) {
+      answer = match[1].toLowerCase();
+    }
+
     return {
-      statusCode: 200,
-      body: JSON.stringify({ playerState: insert.data })
+      question: riddle,
+      answer,
+      solved: false
     };
+  } catch {
+    return null;
   }
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ playerState: data })
-  };
 }
-
-async function handleUpdatePlayerState(supabase, userId, x, y) {
-  if (!userId) {
-    return { statusCode: 400, body: JSON.stringify({ error: "No userId" }) };
-  }
-  const { error } = await supabase
-    .from("player_states")
-    .update({ x, y })
-    .eq("user_id", userId);
-
-  if (error) {
-    return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
-  }
-  return {
-    statusCode: 200,
-    body: JSON.stringify({ success: true })
-  };
-}
-
