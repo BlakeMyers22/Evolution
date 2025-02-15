@@ -29,7 +29,7 @@ exports.handler = async (event) => {
       );
     }
 
-    // 3) Otherwise, handle room creation or fetch
+    // 3) Otherwise, handle room creation/fetch
     const { x, y } = body;
     if (typeof x !== "number" || typeof y !== "number") {
       return {
@@ -46,7 +46,6 @@ exports.handler = async (event) => {
       .eq("y", y)
       .single();
 
-    // If there's an unexpected supabase error
     if (error && error.code !== "PGRST116") {
       return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
     }
@@ -60,7 +59,6 @@ exports.handler = async (event) => {
         ? [{ name: "Mysterious Artifact", description: "A strange glowing orb." }]
         : [];
 
-      // Insert new row
       const insert = await supabase
         .from("rooms")
         .insert({ x, y, tilemap, puzzle, items })
@@ -89,7 +87,6 @@ exports.handler = async (event) => {
 /*  getPlayer / updatePlayer logic                          */
 /* ========================================================= */
 
-// Either fetch existing player state or create one
 async function handleGetPlayerState(supabase, userId) {
   if (!userId) {
     return { statusCode: 400, body: JSON.stringify({ error: "No userId" }) };
@@ -102,12 +99,11 @@ async function handleGetPlayerState(supabase, userId) {
     .eq("user_id", userId)
     .single();
 
-  // If there's a supabase error other than "row not found," handle it
   if (error && error.code !== "PGRST116") {
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 
-  // If player doesn't exist, create a default
+  // If no player row, create one
   if (!data) {
     const insert = await supabase
       .from("player_states")
@@ -135,13 +131,10 @@ async function handleGetPlayerState(supabase, userId) {
   };
 }
 
-// Update player position
 async function handleUpdatePlayerState(supabase, userId, roomX, roomY, tileX, tileY) {
   if (!userId) {
     return { statusCode: 400, body: JSON.stringify({ error: "No userId" }) };
   }
-
-  // Update the player's row
   const { error } = await supabase
     .from("player_states")
     .update({
@@ -210,11 +203,7 @@ async function generatePuzzle() {
       answer = match[1].toLowerCase();
     }
 
-    return {
-      question: riddle,
-      answer,
-      solved: false,
-    };
+    return { question: riddle, answer, solved: false };
   } catch {
     return null;
   }
