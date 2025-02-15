@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A dynamic, infinite game with Supabase + OpenAI + Pixi.js",
   "dependencies": {
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "@supabase/supabase-js": "^2.11.0"
   }
 }
-
