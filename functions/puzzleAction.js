@@ -11,90 +11,14 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || "{}");
     const { action, roomX, roomY, userId, answer } = body;
 
-    if (!roomX || !roomY || !userId) {
+    if (!roomX && roomX !== 0 || !roomY && roomY !== 0 || !userId) {
       return { statusCode: 400, body: JSON.stringify({ error: "Missing room coords or userId" }) };
     }
 
     if (action === "solvePuzzle") {
-      // Attempt to solve the puzzle
-      const { data: roomData, error: roomError } = await supabase
-        .from("rooms")
-        .select("*")
-        .eq("x", roomX)
-        .eq("y", roomY)
-        .single();
-
-      if (roomError) {
-        return { statusCode: 500, body: JSON.stringify({ error: roomError.message }) };
-      }
-      const room = roomData;
-      if (!room || !room.puzzle || room.puzzle.solved) {
-        return { statusCode: 200, body: JSON.stringify({ success: false, message: "No unsolved puzzle here" }) };
-      }
-
-      // Compare answers (case-insensitive)
-      if (answer.toLowerCase() === room.puzzle.answer) {
-        // Mark puzzle as solved
-        const updatedPuzzle = { ...room.puzzle, solved: true };
-        const update = await supabase
-          .from("rooms")
-          .update({ puzzle: updatedPuzzle })
-          .eq("id", room.id);
-
-        // Reward the user with a new item
-        const newItem = {
-          name: "Puzzle Token",
-          description: "A token awarded for solving a puzzle."
-        };
-        await addItemToPlayer(supabase, userId, newItem);
-
-        return { statusCode: 200, body: JSON.stringify({
-          success: true,
-          message: "Puzzle solved! You gained a Puzzle Token."
-        }) };
-      } else {
-        return { statusCode: 200, body: JSON.stringify({
-          success: false,
-          message: "Incorrect answer."
-        }) };
-      }
+      return await solvePuzzle(supabase, roomX, roomY, userId, answer);
     } else if (action === "pickUpItems") {
-      // Move items from room to player's inventory
-      const { data: roomData, error: roomError } = await supabase
-        .from("rooms")
-        .select("*")
-        .eq("x", roomX)
-        .eq("y", roomY)
-        .single();
-
-      if (roomError) {
-        return { statusCode: 500, body: JSON.stringify({ error: roomError.message }) };
-      }
-      const room = roomData;
-      if (!room || !room.items || room.items.length === 0) {
-        return { statusCode: 200, body: JSON.stringify({ success: false, message: "No items here." }) };
-      }
-
-      const itemsToPickup = room.items;
-      // Clear items in the room
-      const updateRoom = await supabase
-        .from("rooms")
-        .update({ items: [] })
-        .eq("id", room.id);
-
-      if (updateRoom.error) {
-        return { statusCode: 500, body: JSON.stringify({ error: updateRoom.error.message }) };
-      }
-
-      // Add items to player
-      for (let item of itemsToPickup) {
-        await addItemToPlayer(supabase, userId, item);
-      }
-
-      return { statusCode: 200, body: JSON.stringify({
-        success: true,
-        message: `You picked up ${itemsToPickup.length} item(s).`
-      }) };
+      return await pickUpItems(supabase, roomX, roomY, userId);
     }
 
     return { statusCode: 400, body: JSON.stringify({ error: "Invalid action" }) };
@@ -107,6 +31,112 @@ exports.handler = async (event) => {
   }
 };
 
+async function solvePuzzle(supabase, x, y, userId, answer) {
+  if (!answer) {
+    return { statusCode: 200, body: JSON.stringify({ success: false, message: "No answer provided." }) };
+  }
+
+  // Fetch the room
+  const { data: roomData, error: roomError } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("x", x)
+    .eq("y", y)
+    .single();
+
+  if (roomError) {
+    return { statusCode: 500, body: JSON.stringify({ error: roomError.message }) };
+  }
+  if (!roomData || !roomData.puzzle || roomData.puzzle.solved) {
+    return { statusCode: 200, body: JSON.stringify({
+      success: false, 
+      message: "No unsolved puzzle here."
+    }) };
+  }
+
+  // Compare answers
+  if (answer.toLowerCase() === roomData.puzzle.answer) {
+    // Mark puzzle solved
+    const updatedPuzzle = { ...roomData.puzzle, solved: true };
+    const updateRoom = await supabase
+      .from("rooms")
+      .update({ puzzle: updatedPuzzle })
+      .eq("id", roomData.id);
+
+    if (updateRoom.error) {
+      return { statusCode: 500, body: JSON.stringify({ error: updateRoom.error.message }) };
+    }
+
+    // Reward the user
+    const newItem = {
+      name: "Puzzle Token",
+      description: "A token awarded for solving a puzzle."
+    };
+    await addItemToPlayer(supabase, userId, newItem);
+
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        success: true,
+        message: "Puzzle solved! You gained a Puzzle Token."
+      })
+    };
+  } else {
+    return {
+      statusCode: 200,
+      body: JSON.stringify({
+        success: false,
+        message: "Incorrect answer."
+      })
+    };
+  }
+}
+
+async function pickUpItems(supabase, x, y, userId) {
+  // Fetch room
+  const { data: roomData, error: roomError } = await supabase
+    .from("rooms")
+    .select("*")
+    .eq("x", x)
+    .eq("y", y)
+    .single();
+
+  if (roomError) {
+    return { statusCode: 500, body: JSON.stringify({ error: roomError.message }) };
+  }
+  if (!roomData || !roomData.items || roomData.items.length === 0) {
+    return { statusCode: 200, body: JSON.stringify({
+      success: false,
+      message: "No items here."
+    }) };
+  }
+
+  const itemsToPickup = roomData.items;
+
+  // Clear room items
+  const updateRoom = await supabase
+    .from("rooms")
+    .update({ items: [] })
+    .eq("id", roomData.id);
+
+  if (updateRoom.error) {
+    return { statusCode: 500, body: JSON.stringify({ error: updateRoom.error.message }) };
+  }
+
+  // Add to player
+  for (let item of itemsToPickup) {
+    await addItemToPlayer(supabase, userId, item);
+  }
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({
+      success: true,
+      message: `You picked up ${itemsToPickup.length} item(s).`
+    })
+  };
+}
+
 async function addItemToPlayer(supabase, userId, newItem) {
   // Get player
   const { data: playerData, error: playerError } = await supabase
@@ -115,9 +145,9 @@ async function addItemToPlayer(supabase, userId, newItem) {
     .eq("user_id", userId)
     .single();
 
-  if (playerError) return;
+  if (playerError || !playerData) return;
 
-  let inventory = playerData.inventory || [];
+  const inventory = playerData.inventory || [];
   inventory.push(newItem);
 
   await supabase
