@@ -156,4 +156,3 @@ function getOrCreateUserId() {
   }
   return id;
 }
-
