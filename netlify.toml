@@ -1,5 +1,4 @@
 [build]
-  # We're serving static HTML/JS, no build command needed
   command = ""
   publish = "."
 
@@ -11,4 +10,3 @@
   from = "/api/*"
   to = "/.netlify/functions/:splat"
   status = 200
-
