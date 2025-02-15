@@ -20,7 +20,7 @@ h1 {
 
 #game-container {
   width: 100%;
-  height: 400px;
+  height: 480px; /* Enough to display 10 tiles at 48px each, for example */
   background: #222;
   margin-bottom: 10px;
   position: relative;
@@ -32,8 +32,8 @@ h1 {
 }
 
 #controls button {
-  margin: 0 5px;
-  padding: 10px;
+  margin: 5px;
+  padding: 10px 15px;
   cursor: pointer;
   border: none;
   background: #007bff;
@@ -48,12 +48,30 @@ h1 {
 }
 
 #log {
-  height: 100px;
+  height: 150px;
   overflow-y: auto;
   border: 1px solid #ccc;
   padding: 10px;
   background: #fafafa;
   font-family: monospace;
   white-space: pre-wrap;
+  margin-bottom: 10px;
 }
 
+#puzzle-input {
+  width: calc(100% - 100px);
+  padding: 8px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+#puzzle-submit-btn {
+  padding: 8px 15px;
+  cursor: pointer;
+  border: none;
+  background: #28a745;
+  color: #fff;
+  font-size: 14px;
+  margin-left: 5px;
+  border-radius: 4px;
+}
