@@ -1,5 +1,4 @@
 // functions/generateText.js
-
 const fetch = require("node-fetch");
 
 exports.handler = async (event) => {
@@ -24,15 +23,15 @@ exports.handler = async (event) => {
         messages: [
           {
             role: "system",
-            content: "You are a creative game AI, describing fantastical, whimsical rooms or scenarios. Be imaginative."
+            content: "You are a creative game AI, describing fantastical, whimsical worlds."
           },
           {
             role: "user",
             content: prompt
           }
         ],
-        max_tokens: 100,
-        temperature: 0.9
+        max_tokens: 120,
+        temperature: 0.8
       })
     });
 
@@ -56,4 +55,3 @@ exports.handler = async (event) => {
     };
   }
 };
-
