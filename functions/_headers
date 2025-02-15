@@ -1,1 +1,6 @@
+/* 
+  Content-Security-Policy: default-src 'self'; 
+    script-src 'self' 'unsafe-eval' https://cdn.jsdelivr.net; 
+    object-src 'none'; 
+    base-uri 'self';
 
