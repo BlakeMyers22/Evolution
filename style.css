@@ -1,1 +1,57 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: sans-serif;
+  background: #f4f4f4;
+  color: #333;
+}
+
+.container {
+  max-width: 600px;
+  margin: 40px auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 6px;
+}
+
+h1 {
+  text-align: center;
+}
+
+#game-container {
+  display: flex;
+  flex-direction: column;
+}
+
+#story-output {
+  background: #fafafa;
+  border: 1px solid #ccc;
+  min-height: 300px;
+  margin-bottom: 20px;
+  padding: 10px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  font-family: "Courier New", Courier, monospace;
+}
+
+.input-section {
+  display: flex;
+  gap: 10px;
+}
+
+#user-input {
+  flex: 1;
+  padding: 10px;
+  font-size: 16px;
+}
+
+#submit-btn {
+  padding: 10px 20px;
+  cursor: pointer;
+  background: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+}
 
