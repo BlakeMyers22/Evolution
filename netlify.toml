@@ -1,1 +1,14 @@
+[build]
+  # We're serving static HTML/JS, no build command needed
+  command = ""
+  publish = "."
+
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
 
