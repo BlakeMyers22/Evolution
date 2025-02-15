@@ -2,31 +2,39 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
-  <title>Ever-Evolving Game</title>
+  <title>Ever-Evolving Tile Game</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
-    <h1>Ever-Evolving Game</h1>
+    <h1>Ever-Evolving Tile Game (Supabase + OpenAI + Pixi.js)</h1>
     
     <div id="game-container"></div>
     
     <div id="controls">
-      <button id="up-btn">Up</button>
-      <button id="down-btn">Down</button>
-      <button id="left-btn">Left</button>
-      <button id="right-btn">Right</button>
+      <p>Use WASD or Arrow Keys to move</p>
+      <div>
+        <button id="up-btn">Up</button>
+        <button id="down-btn">Down</button>
+        <button id="left-btn">Left</button>
+        <button id="right-btn">Right</button>
+      </div>
+      <div>
+        <button id="pick-up-btn">Pick Up Items</button>
+      </div>
     </div>
     
     <div id="log-container">
       <h2>Log</h2>
       <div id="log"></div>
+      <input id="puzzle-input" placeholder="Puzzle answer here..." />
+      <button id="puzzle-submit-btn">Solve Puzzle</button>
     </div>
   </div>
 
-  <!-- Pixi.js from a CDN -->
+  <!-- Pixi.js from CDN -->
   <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.x/dist/browser/pixi.min.js"></script>
-  <!-- Main logic -->
+  <!-- Main game logic -->
   <script src="main.js"></script>
 </body>
 </html>
